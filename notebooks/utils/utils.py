@@ -3,7 +3,7 @@ import pandas as pd
 
 
 def get_evaluation_predictions(
-    weave_client: weave.trace.weave_client.WeaveClient, 
+    weave_client: weave.trace.weave_client.WeaveClient,
     eval_call_id: str
 ) -> pd.DataFrame:
     """
@@ -23,7 +23,8 @@ def get_evaluation_predictions(
         if eval_call.op_name.split("/")[-1].split(":")[0] == "Evaluation.predict_and_score":
             _eval_call = weave_client.get_call(eval_call.id)
             data = dict(_eval_call.inputs["example"])
-            data.update({"pred_score": dict(_eval_call.output)["output"]["score"]})
+            out = dict(_eval_call.output)
+            data.update({"pred_score": out["model_output"]["score"]})
             predictions.append(data)
 
     return pd.DataFrame(predictions)
@@ -52,7 +53,8 @@ def calculate_cohen_kappa(df: pd.DataFrame, labels: list) -> float:
     )
 
     if isinstance(df["pred_score"][0], str):
-        score = df['score'].apply(lambda x: 'Bad' if 1 <= x <= 3 else 'Excellent')
+        score = df['score'].apply(
+            lambda x: 'Bad' if 1 <= x <= 3 else 'Excellent')
         labels = ['Bad', 'Excellent']
     else:
         score = df["score"]
